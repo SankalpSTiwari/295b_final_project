@@ -1,0 +1,72 @@
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8
+    container_name: moodify-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass123
+      MYSQL_DATABASE: moodifydb
+      MYSQL_USER: moodify
+      MYSQL_PASSWORD: moodifypass123
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-hmoodify-mysql", "-pmoodifypass123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: moodify
+      DB_PASSWORD: moodifypass123
+      DB_NAME: moodifydb
+      Secret: change-me-please
+      USE_LOCAL_DB: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3001:3001"
+
+  ml:
+    build:
+      context: backend/ml_models/music
+      dockerfile: Dockerfile
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: moodify
+      DB_PASSWORD: moodifypass123
+      DB_NAME: moodifydb
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: http://backend:3001
+        REACT_APP_FLASK_URL: http://ml:5000
+    depends_on:
+      - backend
+      - ml
+    ports:
+      - "3000:3000"
+
+volumes:
+  db_data:
+

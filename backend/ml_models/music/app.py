@@ -234,4 +234,5 @@ def recommend():
 #################################################################################
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Bind to 0.0.0.0 for Docker
+    app.run(debug=True, host="0.0.0.0")

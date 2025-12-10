@@ -177,11 +177,13 @@ def predict():
     print(f"User ID: {user_id}")
 
     signin_res = get_signin_ques_data(user_id)
-    print(signin_res['mood'])
+    if not signin_res:
+        return jsonify([])  # no data yet for this user
 
-    user_mood = signin_res['mood']
-    user_era = signin_res['time_preference']
-    print(user_era)
+    user_mood = signin_res.get('mood')
+    user_era = signin_res.get('time_preference')
+    if not user_mood or not user_era:
+        return jsonify([])
 
     recommendations = recommend_songs_for_user_preferences(
         multi_target_rf, df, scaler, user_mood, user_era, 5)
@@ -214,13 +216,19 @@ def recommend():
     print(f"From Movie Side User ID: {user_id}")
 
     signin_res = get_signin_ques_data(user_id)
+    if not signin_res:
+        return jsonify([])
 
-    curr_mood = signin_res['mood']
-    pref_era = signin_res['time_preference']
+    curr_mood = signin_res.get('mood')
+    pref_era = signin_res.get('time_preference')
+    if not curr_mood or not pref_era:
+        return jsonify([])
     print(pref_era)
 
     user_data = get_user_movie_data(user_id)
     print(user_data)
+    if not user_data:
+        return jsonify([])
     movies = pd.read_csv('./tmdb2024_new.csv')
     filtered_movies = movies[movies['Release_Era'] == pref_era]
     recommendations = recommend_movies(

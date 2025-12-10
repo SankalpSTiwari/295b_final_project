@@ -1,4 +1,4 @@
-version: "3.9"
+version: '3.9'
 
 services:
   db:
@@ -11,11 +11,11 @@ services:
       MYSQL_USER: moodify
       MYSQL_PASSWORD: moodifypass123
     ports:
-      - "3306:3306"
+      - '3306:3306'
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-hmoodify-mysql", "-pmoodifypass123"]
+      test: ['CMD', 'mysqladmin', 'ping', '-hmoodify-mysql', '-pmoodifypass123']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -31,12 +31,12 @@ services:
       DB_PASSWORD: moodifypass123
       DB_NAME: moodifydb
       Secret: change-me-please
-      USE_LOCAL_DB: "false"
+      USE_LOCAL_DB: 'false'
     depends_on:
       db:
         condition: service_healthy
     ports:
-      - "3001:3001"
+      - '3001:3001'
 
   ml:
     build:
@@ -52,21 +52,21 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "5000:5000"
+      - '5001:5000'
 
   frontend:
     build:
       context: frontend
       dockerfile: Dockerfile
       args:
-        REACT_APP_API_URL: http://backend:3001
-        REACT_APP_FLASK_URL: http://ml:5000
+        # Use host-accessible URLs so the browser can reach the APIs
+        REACT_APP_API_URL: http://localhost:3001
+        REACT_APP_FLASK_URL: http://localhost:5001
     depends_on:
       - backend
       - ml
     ports:
-      - "3000:3000"
+      - '3000:3000'
 
 volumes:
   db_data:
-

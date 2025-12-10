@@ -1,5 +1,13 @@
 # 295b_final_project
 
+## Project Elevator Pitch:
+
+https://drive.google.com/file/d/159rZh6kgM-dnhf5xD9bBuveTxRR6WMKB/view
+
+## Project Presentation & Demo:
+
+https://drive.google.com/file/d/16f6ENhTCvWrFpmI0MC_VFvgXkIklQRU_/view
+
 Repo for Master's Final Project for stress management application
 
 ## To setup Flask backend & install libraries for ML Models:

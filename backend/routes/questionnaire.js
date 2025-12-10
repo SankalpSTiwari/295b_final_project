@@ -32,44 +32,25 @@ router.post('/submit_signin_ques', async (req, res) => {
     `;
     const values = [user_id, mood, recommOption, chipGroup, chipTime];
 
-    // Using pool to handle database operations
-    pool
-      .then((p) => {
-        return p.getConnection().then((connection) => {
-          // Begin transaction
-          connection.beginTransaction();
-
-          // Execute the UPSERT query
-          return connection
-            .query(upsertSql, values)
-            .then((results) => {
-              // Check if rows are affected
-              if (results.affectedRows === 0) {
-                throw new Error('No changes were made to the questionnaire response.');
-              }
-
-              // Commit transaction and release connection
-              connection.commit();
-              connection.release();
-
-              // Respond with success message
-              res.status(HttpCodes.OK).json({
-                message: 'Questionnaire responses updated successfully.',
-              });
-            })
-            .catch((err) => {
-              // Rollback transaction and release connection on error
-              connection.rollback(() => connection.release());
-
-              // Send error response
-              res.status(HttpCodes.InternalServerError).json({ errmessage: err.message });
-            });
-        });
-      })
-      .catch((err) => {
-        // Send error response if failed to get connection from pool
-        res.status(HttpCodes.InternalServerError).json({ errmessage: 'Failed to get database connection.' });
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [results] = await connection.query(upsertSql, values);
+      if (!results || results.affectedRows === 0) {
+        throw new Error('No changes were made to the questionnaire response.');
+      }
+      await connection.commit();
+      res.status(HttpCodes.OK).json({
+        message: 'Questionnaire responses updated successfully.',
       });
+    } catch (err) {
+      await connection.rollback();
+      res
+        .status(HttpCodes.InternalServerError)
+        .json({ errmessage: err.message || 'Failed to save questionnaire' });
+    } finally {
+      connection.release();
+    }
   } catch (err) {
     console.error(err);
     res.status(HttpCodes.InternalServerError).json({ errmessage: 'Error updating questionnaire responses.' });
@@ -101,44 +82,23 @@ router.post('/submit_signup_ques', async (req, res) => {
     `;
     const values = [user_id, happy_movie, sad_movie, neutral_movie];
 
-    // Use pool.then().then() structure for handling database operations
-    pool
-      .then((p) => {
-        return p.getConnection().then((connection) => {
-          // Begin transaction
-          connection.beginTransaction();
-
-          // Execute the UPSERT query
-          return connection
-            .query(upsertSql, values)
-            .then((results) => {
-              // Check if rows are affected
-              if (results.affectedRows === 0) {
-                throw new Error('No changes were made to your movie preferences.');
-              }
-
-              // Commit transaction and release connection
-              connection.commit();
-              connection.release();
-
-              // Respond with success message
-              res.status(HttpCodes.OK).json({
-                message: 'Movie preferences updated successfully.',
-              });
-            })
-            .catch((err) => {
-              // Rollback transaction and release connection on error
-              connection.rollback(() => connection.release());
-
-              // Send error response
-              res.status(HttpCodes.InternalServerError).json({ errmessage: err.message });
-            });
-        });
-      })
-      .catch((err) => {
-        // Send error response if failed to get connection from pool
-        res.status(HttpCodes.InternalServerError).json({ errmessage: 'Failed to get database connection.' });
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const [results] = await connection.query(upsertSql, values);
+      if (!results || results.affectedRows === 0) {
+        throw new Error('No changes were made to your movie preferences.');
+      }
+      await connection.commit();
+      res.status(HttpCodes.OK).json({
+        message: 'Movie preferences updated successfully.',
       });
+    } catch (err) {
+      await connection.rollback();
+      res.status(HttpCodes.InternalServerError).json({ errmessage: err.message || 'Failed to save preferences' });
+    } finally {
+      connection.release();
+    }
   } catch (err) {
     console.error(err);
     res.status(HttpCodes.InternalServerError).json({ errmessage: 'Error updating movie preferences.' });

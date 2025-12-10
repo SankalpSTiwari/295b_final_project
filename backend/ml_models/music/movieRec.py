@@ -10,17 +10,29 @@ def parse_genres(genres_str):
 
 
 def recommend_movies(user_data, movies, current_mood, top_n):
+    # Bail out early if we are missing data
+    if not user_data:
+        return []
     mood_key = f'{current_mood.lower()}_movie'
-    user_pref_genres = parse_genres(user_data[mood_key])
+    user_pref_genres = parse_genres(user_data.get(mood_key, ''))
+    if not user_pref_genres:
+        return []
 
     # movies['Genres'] = movies['Genres'].apply(parse_genres)
     movies['Genres'] = movies['Genres'].str.lower()
     movie_genres_df = movies[movies['Genres'].apply(
         lambda genres: any(genre in genres for genre in user_pref_genres))]
+    if movie_genres_df.empty:
+        # Fallback: return top popular movies if no genre match
+        movie_genres_df = movies.sort_values(by='popularity', ascending=False).head(top_n)
 
     mlb = MultiLabelBinarizer()
     movie_genres_encoded = mlb.fit_transform(movie_genres_df['Genres'])
+    if movie_genres_encoded.size == 0:
+        return []
     genre_prefs_encoded = mlb.transform([user_pref_genres])
+    if genre_prefs_encoded.size == 0:
+        return []
     similarity_scores = cosine_similarity(
         genre_prefs_encoded, movie_genres_encoded)[0]
 

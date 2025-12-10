@@ -1,5 +1,6 @@
 from movieRec import recommend_movies
 from flask import Flask, render_template, request, jsonify
+import os
 from flask_cors import CORS
 import pandas as pd
 import mysql.connector
@@ -13,10 +14,11 @@ CORS(app)
 
 def mysql_connect():
     conn = mysql.connector.connect(
-        host='dbfinalproject.cpcem4w6a78y.us-east-1.rds.amazonaws.com',
-        user='admin',
-        password='295bfinalproject',
-        database='finaldb'
+        host=os.environ.get('DB_HOST', 'dbfinalproject.cpcem4w6a78y.us-east-1.rds.amazonaws.com'),
+        user=os.environ.get('DB_USER', 'admin'),
+        password=os.environ.get('DB_PASSWORD', '295bfinalproject'),
+        database=os.environ.get('DB_NAME', 'finaldb'),
+        port=os.environ.get('DB_PORT', '3306'),
     )
     return conn
 

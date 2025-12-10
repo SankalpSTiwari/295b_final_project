@@ -8,7 +8,7 @@ require('dotenv/config');
 const pool = require('../mysql_db');
 
 // Sign Up
-router.post('/signup', (req, res) => {
+router.post('/signup', async (req, res) => {
   // Assuming 'dob' is now part of the request body
   const { name, email, password, dob } = req.body;
 
@@ -28,50 +28,34 @@ router.post('/signup', (req, res) => {
   // Note: Ensure 'dob' is in a valid datetime format 'YYYY-MM-DD HH:MM:SS' or 'YYYY-MM-DD'
   const values = [name, email, md5(password), dob];
 
-  pool
-    .then((p) => p.getConnection())
-    .then((connection) => {
-      // Begin transaction
-      connection.beginTransaction();
-
-      // Execute the insert query with the provided values
-      return connection
-        .query(insertSql, values)
-        .then((results) => {
-          if (results.affectedRows === 0) {
-            throw new Error('New user has not been added.');
-          }
-
-          // Use the inserted user's ID for the JWT payload
-          const payload = { user_id: results.insertId };
-          console.log(results.insertId);
-          const token = jwt.sign(payload, process.env.Secret, {
-            expiresIn: '1h',
-          });
-
-          // Commit transaction and release connection
-          connection.commit();
-          connection.release();
-
-          // Respond with the JWT token
-          res.status(HttpCodes.OK).send({ jwt: `JWT ${token}` });
-          console.log(token);
-        })
-        .catch((err) => {
-          // On error, rollback transaction and release connection
-          connection.rollback(() => connection.release());
-
-          // Send error response
-          res
-            .status(HttpCodes.InternalServerError)
-            .send({ errmessage: err.message });
-        });
-    })
-    .catch((err) => {
-      res
-        .status(HttpCodes.InternalServerError)
-        .send({ errmessage: 'Database connection failed.' });
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+    const [results] = await connection.query(insertSql, values);
+    if (!results || results.affectedRows === 0) {
+      throw new Error('New user has not been added.');
+    }
+    const payload = { user_id: results.insertId };
+    const token = jwt.sign(payload, process.env.Secret, {
+      expiresIn: '1h',
     });
+    await connection.commit();
+    res.status(HttpCodes.OK).send({ jwt: `JWT ${token}` });
+  } catch (err) {
+    if (connection) {
+      await connection.rollback();
+      connection.release();
+    }
+    res
+      .status(HttpCodes.InternalServerError)
+      .send({ errmessage: err.message || 'Database operation failed.' });
+    return;
+  } finally {
+    if (connection) {
+      connection.release();
+    }
+  }
 });
 
 // Load Balancer Health Check Route

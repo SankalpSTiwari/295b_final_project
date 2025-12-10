@@ -3,3 +3,10 @@ node_modules/
 backend/ml_models/music/venv/
 .DS_Store
 __pycache__
+
+# local secrets and env docs (do not commit)
+DB_SETUP.md
+SECRETS.md
+
+# local fallback store
+backend/files/local-db.json
